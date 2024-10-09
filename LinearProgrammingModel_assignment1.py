@@ -27,7 +27,7 @@ data = [
 monthly_demand = pd.DataFrame(data)
 
 I = range(len(suppliername))                # set of suppliers
-J = range(len(nidist))                     # set of steel types
+J = range(len(nidist))                      # set of steel types
 T = range(len(months))                      # set of months
 
 # ---- Parameters ----
@@ -75,9 +75,9 @@ con2 = {}
 for j in J:
     for t in T:
         if t == 0:
-            con2[j,t] = model.addConstr(p[j,t] >= (d_jt.iloc[j,t] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
+            con2[j,t] = model.addConstr(p[j,t] == (d_jt.iloc[j,t] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
         else:
-            con2[j,t] = model.addConstr((p[j,t] + s[j,t-1]) >= (d_jt.iloc[j,t] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
+            con2[j,t] = model.addConstr((p[j,t] + s[j,t-1]) == (d_jt.iloc[j,t] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
 
 # Constraint 3: max monthly production
 con3 = {}
@@ -86,29 +86,40 @@ for t in T:
 
 # Constraint 4: nickel distribution
 con4 = {}
-for t in T:
-    for j in J:
+for j in J:
+    for t in T:
         con4[t] = model.addConstr(ni_i[j] * p[j, t] == quicksum(ni_i[i] * x[i, t] for i in I), 'con4[' + str(t) + ']-')
 
 # Constraint 5: chromium distribution
 con5 = {}
-for t in T:
-    for j in J:
-        con5[t] = model.addConstr(cr_i[j] * p[j, t] == quicksum(cr_i[i] * x[i, t] for i in I), 'con5[' + str(t) + ']-')
-
-# Constraint 6: storage
-
-con6 = {}
 for j in J:
     for t in T:
-        if t == 0:
-            con6[j,t] = model.addConstr(s[j,t] == 0 + p[j,t] - d_jt.iloc[j,t], 'con6[' + str(j) + ',' + str(t) + ']-')
-        else:
-            con6[j,t] = model.addConstr(s[j,t] == s[j,t-1] + p[j,t] - d_jt.iloc[j,t], 'con6[' + str(j) + ',' + str(t) + ']-')
+        con5[t] = model.addConstr(cr_i[j] * p[j, t] == quicksum(cr_i[i] * x[i, t] for i in I), 'con5[' + str(t) + ']-')
+
+# Constraint 7: positive supply
+
+con7 = {}
+for i in I:
+    for t in T:
+        con7[i] = model.addConstr(x[i,t] >= 0, 'con7[' + str(i) + ']-')
+
+# Constraint 8: positive storage
+
+con8 = {}
+for j in J:
+    for t in T:
+        con8[j] = model.addConstr(s[j,t] >= 0, 'con8[' + str(j) + ']-')
+
+# Constraint 9: positive production
+
+con9 = {}
+for j in J:
+    for t in T:
+        con9[j] = model.addConstr(p[j,t] >= 0, 'con9[' + str(j) + ']-')
 
 # ---- Solve ----
 
-model.setParam( 'OutputFlag', True) # silencing gurobi output or not
+model.setParam('OutputFlag', True) # silencing gurobi output or not
 model.setParam ('MIPGap', 0);       # find the optimal solution
 model.write("output.lp")            # print the model in .lp format file
 
