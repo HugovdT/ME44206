@@ -7,11 +7,10 @@ model = Model ('StainlessSteelProduction')
 
 
 # Cargo characteristics
-suppliername     = ('sup_a', 'sup_b', 'sup_c', 'sup_d', 'sup_e')
+suppliername  = ('sup_a', 'sup_b', 'sup_c', 'sup_d', 'sup_e')
 chromium = ( 18,  25,  15,  14, 0) #% chromium    
 nickel = (0, 15, 10, 16, 10) #% nickel
 copper = (0, 4, 2, 5, 3) #% copper
-iron = (82, 56, 73, 65, 87) #% iron
 maxpermonth = (90, 30, 50, 70, 20) #maximum amount of ore that can be supplied per month
 cost = (5, 10, 9, 7, 8.5) #cost per kg of ore
 nidist = (0.10, 0.8, 0)
@@ -19,12 +18,11 @@ holdingcosts = (20, 10, 5)
 
 # Monthly demand where 18/10, 18/8 and 18/0 are the distributions of chromium and nickel in the stainless steel by percentage
 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-data = {
-    'Month': months,
-    '18/10': [25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99],
-    '18/8': [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-    '18/0': [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]
-}
+data = [
+    [25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99],
+    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
+    [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]
+]
 
 monthly_demand = pd.DataFrame(data)
 
@@ -77,9 +75,9 @@ con2 = {}
 for j in J:
     for t in T:
         if t == 0:
-            con2[j,t] = model.addConstr(p[j,t] >= (d_jt.iloc[t, j] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
+            con2[j,t] = model.addConstr(p[j,t] >= (d_jt.iloc[j,t] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
         else:
-            con2[j,t] = model.addConstr((p[j,t] + s[j,t-1]) >= (d_jt.iloc[t, j] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
+            con2[j,t] = model.addConstr((p[j,t] + s[j,t-1]) >= (d_jt.iloc[j,t] + s[j,t]), 'con2[' + str(j) + ',' + str(t) + ']-')
 
 # Constraint 3: max monthly production
 con3 = {}
@@ -97,6 +95,16 @@ con5 = {}
 for t in T:
     for j in J:
         con5[t] = model.addConstr(cr_i[j] * p[j, t] == quicksum(cr_i[i] * x[i, t] for i in I), 'con5[' + str(t) + ']-')
+
+# Constraint 6: storage
+
+con6 = {}
+for j in J:
+    for t in T:
+        if t == 0:
+            con6[j,t] = model.addConstr(s[j,t] == 0 + p[j,t] - d_jt.iloc[j,t], 'con6[' + str(j) + ',' + str(t) + ']-')
+        else:
+            con6[j,t] = model.addConstr(s[j,t] == s[j,t-1] + p[j,t] - d_jt.iloc[j,t], 'con6[' + str(j) + ',' + str(t) + ']-')
 
 # ---- Solve ----
 
