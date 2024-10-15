@@ -5,8 +5,8 @@
 # Version 0.1
 # 2024-10-04
 
-
 from gurobipy import *
+import pandas as pd
 
 model = Model ('AlloyCombination')
 
@@ -19,12 +19,15 @@ SupNiPer = ( 0,  0.15,  0.10,  0.16, 0.10)        # percentage
 SupCuPer = ( 0,  0.04,  0.02,  0.05, 0.03)        # percentage
 MaxSup = (90, 30, 50, 70, 20)                     # kg
 CostSup = (5, 10, 9, 7, 8.5)                      # ekkies / kg
-Demand1810 = (25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99) #kg per month
-Demand1808 = (10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10) #kg per month
-Demand1800 = (5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100) #kg per month
+Demand1810 = [25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99] #kg per month
+Demand1808 = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10] #kg per month
+Demand1800 = [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100] #kg per month
+DemandName = ("1810", "1808", "1800")
 HoldingCosts = (20, 10, 5) #euro's
+PerNiNec = (0.10, 0.08, 0) # percentage of 
+PerCrNec = 0.18 # percentage of chromiumn needed in all versions
 maxProd = 100 #kg per month
-Demand = [Demand1810, Demand1808, Demand1800]
+Demand = pd.DataFrame[Demand1810, Demand1808, Demand1800]
 
 # ---- Sets ----
 
@@ -50,7 +53,7 @@ for j in J:
 z = {}
 for j in J:
     for k in K:
-        z[j,k] = model.addVar(lb = 0, vtype = GRB.CONTINUOUS, obj = HoldingCost[j], name = 'Z[' + str(j) + ',' + str(k) +']')
+        z[j,k] = model.addVar(lb = 0, vtype = GRB.CONTINUOUS, obj = HoldingCosts[j], name = 'Z[' + str(j) + ',' + str(k) +']')
 
 model.update ()
 
@@ -84,11 +87,27 @@ for j in J:
             con3[j,k] = model.addConstr((y[j,k] + z[j,k-1] - z[j,k]) >= (Demand.iloc[j,k]), 'con3[' + str(j) + ',' + str(k) + ']-')
 
 
-# end comparison H
-# Constraint 4: weight balance first compartment with other compartments
+# Constraint 4: Distribution Cr
 con4 = {}
-for j in range (1, len(J)):
-    con4[j] = model.addConstr( quicksum (x[i,0] for i in I) * maxweight[j] == quicksum (x[i,j] for i in I) * maxweight[0], 'con4[' + str(j) + ']-')
+for j in J:
+    for k in K:
+        con4[k] = model.addConstr(SupCrPer[j] * y[j,k] == quicksum(SupCrPer[i] * x[i,k] for i in I), 'con4[' + str(k) + ']-')
+
+# Constraint 5: Distribution Ni
+con5 = {}
+for j in J:
+    for k in K:
+        con5[k] = model.addConstr(SupNiPer[j] * y[j,k] == quicksum(SupNiPer[i] * x[i,k] for i in I), 'con5[' + str(k) + ']-')
+
+# Constraint 6: perfect use of all Ni%
+con6 = {}
+for k in K:
+    con6[k] = model.addContr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con6[' + str(k) + ']-')
+
+# Constraint 7: perfect use of all Ni%
+con7 = {}
+for k in K:
+    con7[k] = model.addContr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con7[' + str(k) + ']-')
 
 
 # ---- Solve ----
@@ -110,11 +129,11 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
 
     s = '%8s' % ''
     for i in I:
-        s = s + '%8s' % cargoname[i]
+        s = s + '%8s' % Steeltype[i]
     print (s)    
 
     for j in J:
-        s = '%8s' % compname[j]
+        s = '%8s' % DemandName[j]
         for i in I:
             s = s + '%8.3f' % x[i,j].x
         s = s + '%8.3f' % sum (x[i,j].x for i in I)    
