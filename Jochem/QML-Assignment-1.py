@@ -27,7 +27,8 @@ HoldingCosts = (20, 10, 5) #euro's
 PerNiNec = (0.10, 0.08, 0) # percentage of 
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions
 maxProd = 100 #kg per month
-Demand = pd.DataFrame[Demand1810, Demand1808, Demand1800]
+Demand = (Demand1810, Demand1808, Demand1800)
+Demand = pd.DataFrame(Demand)
 
 # ---- Sets ----
 
@@ -102,12 +103,12 @@ for j in J:
 # Constraint 6: perfect use of all Ni%
 con6 = {}
 for k in K:
-    con6[k] = model.addContr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con6[' + str(k) + ']-')
+    con6[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
 # Constraint 7: perfect use of all Ni%
 con7 = {}
 for k in K:
-    con7[k] = model.addContr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con7[' + str(k) + ']-')
+    con7[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con7[' + str(k) + ']-')
 
 
 # ---- Solve ----
