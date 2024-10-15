@@ -13,7 +13,7 @@ nickel = (0, 15, 10, 16, 10) #% nickel
 copper = (0, 4, 2, 5, 3) #% copper
 maxpermonth = (90, 30, 50, 70, 20) #maximum amount of ore that can be supplied per month
 cost = (5, 10, 9, 7, 8.5) #cost per kg of ore
-nidist = (0.10, 0.8, 0)
+nidist = (0.10, 0.08, 0)
 holdingcosts = (20, 10, 5)
 
 # Monthly demand where 18/10, 18/8 and 18/0 are the distributions of chromium and nickel in the stainless steel by percentage
