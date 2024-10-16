@@ -93,7 +93,7 @@ con5 = {}
 for t in T:
     con5[t] = model.addConstr(quicksum(crdem_j[j] * p[j, t] for j in J)== quicksum(crsup_i[i] * x[i, t] for i in I), 'con5[' + str(t) + ']-')
 
-# Constraint 6: supply < production
+# Constraint 6: supply = production
 con6 = {}
 for t in T:
     con6[t] = model.addConstr(quicksum(x[i, t] for i in I) == quicksum(p[j, t] for j in J), 'con6[' + str(t) + ']-')
