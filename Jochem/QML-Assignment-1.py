@@ -27,8 +27,14 @@ HoldingCosts = (20, 10, 5) #euro's
 PerNiNec = (0.10, 0.08, 0) # percentage of 
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions
 maxProd = 100 #kg per month
+
+#Demand1810 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month # Using this would need to give 185.58 ekkies
+#Demand1808 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
+#Demand1800 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
+
 Demand = (Demand1810, Demand1808, Demand1800)
 Demand = pd.DataFrame(Demand)
+
 
 # ---- Sets ----
 
@@ -56,13 +62,13 @@ for j in J:
     for k in K:
         z[j,k] = model.addVar(lb = 0, vtype = GRB.CONTINUOUS, obj = HoldingCosts[j], name = 'Z[' + str(j) + ',' + str(k) +']')
 
-model.update ()
+model.update()
 
 
 # ---- Objective Function ----
 
 model.modelSense = GRB.MINIMIZE
-model.update ()
+model.update()
 
 
 # ---- Constraints ----
@@ -83,33 +89,26 @@ con3 = {}
 for j in J:
     for k in K:
         if k == 0:
-            con3[j,k] = model.addConstr((y[j,k] - z[j,k]) >= Demand.iloc[j,k], 'con3[' + str(j) + ',' + str(k) + ']-')
+            con3[j,k] = model.addConstr((y[j,k] - z[j,k]) == Demand.iloc[j,k], 'con3[' + str(j) + ',' + str(k) + ']-')
         else:
-            con3[j,k] = model.addConstr((y[j,k] + z[j,k-1] - z[j,k]) >= (Demand.iloc[j,k]), 'con3[' + str(j) + ',' + str(k) + ']-')
+            con3[j,k] = model.addConstr((y[j,k] + z[j,k-1] - z[j,k]) == (Demand.iloc[j,k]), 'con3[' + str(j) + ',' + str(k) + ']-')
 
-
-# Constraint 4: Distribution Cr
+# Constraint 4: do not buy more than you produce
 con4 = {}
-for j in J:
-    for k in K:
-        con4[k] = model.addConstr(SupCrPer[j] * y[j,k] == quicksum(SupCrPer[i] * x[i,k] for i in I), 'con4[' + str(k) + ']-')
-
-# Constraint 5: Distribution Ni
-con5 = {}
-for j in J:
-    for k in K:
-        con5[k] = model.addConstr(SupNiPer[j] * y[j,k] == quicksum(SupNiPer[i] * x[i,k] for i in I), 'con5[' + str(k) + ']-')
+for k in K:
+    con4[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] for j in J), 'con4[' + str(k) + ']-')
 
 # Constraint 6: perfect use of all Ni%
 con6 = {}
 for k in K:
     con6[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
-# Constraint 7: perfect use of all Ni%
+# Constraint 7: perfect use of all Cr%
 con7 = {}
 for k in K:
     con7[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con7[' + str(k) + ']-')
 
+model.update()
 
 # ---- Solve ----
 
@@ -117,14 +116,14 @@ model.setParam( 'OutputFlag', True) # silencing gurobi output or not
 model.setParam ('MIPGap', 0);       # find the optimal solution
 model.write("output.lp")            # print the model in .lp format file
 
-model.optimize ()
+model.optimize()
 
 
 # --- Print results ---
 print ('\n--------------------------------------------------------------------\n')
     
 if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
-    print ('Total profit : %10.2f euro' % model.objVal)
+    print ('Total costs : %10.2f euro' % model.objVal)
     print ('')
     print ('All decision variables:\n')
 
