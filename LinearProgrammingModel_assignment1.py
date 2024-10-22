@@ -8,21 +8,19 @@ model = Model ('StainlessSteelProduction')
 
 # Cargo characteristics
 suppliername  = ('sup_a', 'sup_b', 'sup_c', 'sup_d', 'sup_e')
-chromium = ( 18,  25,  15,  14, 0) #% chromium    
-nickel = (0, 15, 10, 16, 10) #% nickel
-copper = (0, 4, 2, 5, 3) #% copper
+chromium = (0.18, 0.25, 0.15, 0.14, 0) #% chromium    
+nickel = (0, 0.15, 0.10, 0.16, 0.10) #% nickel
+copper = (0, 0.04, 0.02, 0.05, 0.03) #% copper
 maxpermonth = (90, 30, 50, 70, 20) #maximum amount of ore that can be supplied per month
 cost = (5, 10, 9, 7, 8.5) #cost per kg of ore
 nidist = (0.10, 0.08, 0)
+chdist = (0.18, 0.18, 0.18)
 holdingcosts = (20, 10, 5)
 
 # Monthly demand where 18/10, 18/8 and 18/0 are the distributions of chromium and nickel in the stainless steel by percentage
 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-data = [
-    [25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99],
-    [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10],
-    [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]
-]
+data = [[25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99], [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10], [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]]
+#data = [[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 
 monthly_demand = pd.DataFrame(data)
 
@@ -36,9 +34,10 @@ c_i = cost
 h_j = holdingcosts
 d_jt = monthly_demand
 u_i = maxpermonth
-cr_i = chromium
-ni_i = nickel
-cu_i = copper
+crsup_i = chromium
+nisup_i = nickel
+crdem_j = chdist
+nidem_j = nidist
 
 # ---- Variables ----
 
@@ -86,36 +85,18 @@ for t in T:
 
 # Constraint 4: nickel distribution
 con4 = {}
-for j in J:
-    for t in T:
-        con4[t] = model.addConstr(ni_i[j] * p[j, t] == quicksum(ni_i[i] * x[i, t] for i in I), 'con4[' + str(t) + ']-')
+for t in T:
+    con4[t] = model.addConstr(quicksum(nidem_j[j] * p[j, t] for j in J) == quicksum(nisup_i[i] * x[i, t] for i in I), 'con4[' + str(t) + ']-')
 
 # Constraint 5: chromium distribution
 con5 = {}
-for j in J:
-    for t in T:
-        con5[t] = model.addConstr(cr_i[j] * p[j, t] == quicksum(cr_i[i] * x[i, t] for i in I), 'con5[' + str(t) + ']-')
+for t in T:
+    con5[t] = model.addConstr(quicksum(crdem_j[j] * p[j, t] for j in J)== quicksum(crsup_i[i] * x[i, t] for i in I), 'con5[' + str(t) + ']-')
 
-# Constraint 7: positive supply
-
-con7 = {}
-for i in I:
-    for t in T:
-        con7[i] = model.addConstr(x[i,t] >= 0, 'con7[' + str(i) + ']-')
-
-# Constraint 8: positive storage
-
-con8 = {}
-for j in J:
-    for t in T:
-        con8[j] = model.addConstr(s[j,t] >= 0, 'con8[' + str(j) + ']-')
-
-# Constraint 9: positive production
-
-con9 = {}
-for j in J:
-    for t in T:
-        con9[j] = model.addConstr(p[j,t] >= 0, 'con9[' + str(j) + ']-')
+# Constraint 6: supply = production
+con6 = {}
+for t in T:
+    con6[t] = model.addConstr(quicksum(x[i, t] for i in I) == quicksum(p[j, t] for j in J), 'con6[' + str(t) + ']-')
 
 # ---- Solve ----
 
@@ -139,8 +120,8 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
         k = k + '%8s' % suppliername[i]
     print (s)    
 
-    for i in I:
-        s = '%8s' % suppliername[i]
+    for j in J:
+        s = '%8s' % nidist[j]
         for i in I:
             s = s + '%8.3f' % x[i,j].x
         s = s + '%8.3f' % sum (x[i,j].x for i in I)    
@@ -155,8 +136,3 @@ else:
     print ('\nNo feasible solution found')
 
 print ('\nREADY\n')
-
-
-
-
-
