@@ -13,33 +13,32 @@ model = Model ('AlloyCombination')
 
 # ---- Data ----
 
-Steeltype     = ('A', 'B', 'C', 'D', 'E')
-SupCrPer = ( 0.18,  0.25,  0.15,  0.14, 0)        # percentage
-SupNiPer = ( 0,  0.15,  0.10,  0.16, 0.10)        # percentage
-SupCuPer = ( 0,  0.04,  0.02,  0.05, 0.03)        # percentage
-MaxSup = (90, 30, 50, 70, 20)                     # kg
-CostSup = (5, 10, 9, 7, 8.5)                      # ekkies / kg
-Demand1810 = [25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99] #kg per month
-Demand1808 = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10] #kg per month
-Demand1800 = [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100] #kg per month
+Steeltype     = ('A', 'B', 'C', 'D', 'E')           # Names of suppliers
+SupCrPer = (0.18,  0.25,  0.15,  0.14, 0)        # percentage # Cr_i
+SupNiPer = (0,  0.15,  0.10,  0.16, 0.10)        # percentage # Ni_i
+SupCuPer = (0,  0.04,  0.02,  0.05, 0.03)        # percentage # Cu_i
+MaxSup = (90, 30, 50, 70, 20)                     # kg supply max per supplier #max_i
+CostSup = (5, 10, 9, 7, 8.5)                      # ekkies / kg # c_i
+Demand1810 = [25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99] #kg per month # used for d_ik
+Demand1808 = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10] #kg per month # used for d_ik
+Demand1800 = [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100] #kg per month # used for d_ik
 DemandName = ("1810", "1808", "1800")
-HoldingCosts = (20, 10, 5) #euro's
-PerNiNec = (0.10, 0.08, 0) # percentage of 
-PerCrNec = 0.18 # percentage of chromiumn needed in all versions
-maxProd = 100 #kg per month
+HoldingCosts = (20, 10, 5) #euro's #h_j
+PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
+PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
+maxProd = 100 #kg per month #p_max
 
 #Demand1810 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month # Using this would need to give 185.58 ekkies
 #Demand1808 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
 #Demand1800 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
 
 Demand = (Demand1810, Demand1808, Demand1800)
-Demand = pd.DataFrame(Demand)
-
+Demand = pd.DataFrame(Demand) # make array for d_ik
 
 # ---- Sets ----
 
 I = range(len(Steeltype))                # set of suppliers
-K = range(len(SupCrPer))                 # set of months
+K = range(len(Demand1810))                 # set of months
 J = range(len(HoldingCosts))             # set of types of produced steel
 
 # ---- Variables ----
@@ -98,15 +97,15 @@ con4 = {}
 for k in K:
     con4[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] for j in J), 'con4[' + str(k) + ']-')
 
-# Constraint 6: perfect use of all Ni%
+# Constraint 5: perfect use of all Ni%
+con5 = {}
+for k in K:
+    con5[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con5[' + str(k) + ']-')
+
+# Constraint 6: perfect use of all Cr%
 con6 = {}
 for k in K:
-    con6[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con6[' + str(k) + ']-')
-
-# Constraint 7: perfect use of all Cr%
-con7 = {}
-for k in K:
-    con7[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con7[' + str(k) + ']-')
+    con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
 model.update()
 
