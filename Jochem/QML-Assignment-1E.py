@@ -27,10 +27,10 @@ HoldingCosts = (20, 10, 5) #euro's #h_j
 PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
 maxProd = 100 #kg per month #p_max
-
-#Demand1810 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month # Using this would need to give 185.58 ekkies
-#Demand1808 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
-#Demand1800 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
+################# New for E
+CuLim = 0.05 # percentage of copper
+elecCosts = 100 # euros costs for use of electrolysis
+elecCostskg = 5 # euros per kilo copper
 
 Demand = (Demand1810, Demand1808, Demand1800)
 Demand = pd.DataFrame(Demand) # make array for d_ik
