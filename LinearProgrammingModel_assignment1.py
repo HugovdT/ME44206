@@ -19,8 +19,26 @@ holdingcosts = (20, 10, 5)
 
 # Monthly demand where 18/10, 18/8 and 18/0 are the distributions of chromium and nickel in the stainless steel by percentage
 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-data = [[25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99], [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10], [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]]
-#data = [[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+# data = [[25, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99], [10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10], [5, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]]
+
+# test 0
+# data = [[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+# test 1
+# data = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+
+# test 2
+# data = [[100, 25, 0, 0, 0, 50, 12, 0, 10, 10, 45, 99], [100, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10], [100, 20, 80, 25, 50, 125, 150, 80, 40, 35, 3, 100]]
+
+# test 3
+# data = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 250], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 250], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 250]] 
+
+# test 4
+# data = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+
+# test 5
+# import numpy as np
+# data = np.random.randint(0, 50, size=(3, 12)).tolist()
 
 monthly_demand = pd.DataFrame(data)
 
@@ -39,7 +57,7 @@ nisup_i = nickel
 crdem_j = chdist
 nidem_j = nidist
 
-# ---- Variables ----
+# ---- Decission variables ----
 
 x = {} 
 for i in I:
@@ -111,28 +129,27 @@ model.optimize ()
 print ('\n--------------------------------------------------------------------\n')
     
 if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
+    print ('All decision variables:\n')
+    for v in model.getVars():
+        if v.x > 0:
+            print('%s: %g' % (v.varName, v.x))
+    x_matrix = pd.DataFrame([[x[i, t].x for t in T] for i in I], index=suppliername, columns=months)
+    s_matrix = pd.DataFrame([[s[j, t].x for t in T] for j in J], index=[f'Steel_{j}' for j in J], columns=months)
+    p_matrix = pd.DataFrame([[p[j, t].x for t in T] for j in J], index=[f'Steel_{j}' for j in J], columns=months)
+
+    print("\nX matrix (Alloy supply):")
+    print(x_matrix)
+    print("\nS matrix (Storage):")
+    print(s_matrix)
+    print("\nP matrix (Production):")
+    print(p_matrix)
+
     print ('Total cost : %10.2f euro' % model.objVal)
     print ('')
-    print ('All decision variables:\n')
-
-    k = '%8s' % ''
-    for i in I:
-        k = k + '%8s' % suppliername[i]
-    print (s)    
-
-    for j in J:
-        s = '%8s' % nidist[j]
-        for i in I:
-            s = s + '%8.3f' % x[i,j].x
-        s = s + '%8.3f' % sum (x[i,j].x for i in I)    
-        print (s)    
-
-    s = '%8s' % ''
-    for i in I:
-        s = s + '%8.3f' % sum (x[i,j].x for j in J)    
-    print (s)    
+    
 
 else:
     print ('\nNo feasible solution found')
 
 print ('\nREADY\n')
+
