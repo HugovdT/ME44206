@@ -1,4 +1,4 @@
-# Quantitative Methods for Logistics Assignment 1
+# Quantitative Methods for Logistics Assignment 1D
 # Gurobi Optimization
 #
 # Author: Jochem den Nijs
@@ -9,7 +9,6 @@ from gurobipy import *
 import pandas as pd
 
 model = Model ('AlloyCombination')
-
 
 # ---- Data ----
 
@@ -26,7 +25,7 @@ DemandName = ("1810", "1808", "1800")
 HoldingCosts = (20, 10, 5) #euro's #h_j
 PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
-maxProd = 100 #kg per month #p_max
+maxProd = 159 #kg per month #p_max
 
 #Demand1810 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month # Using this would need to give 185.58 ekkies
 #Demand1808 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
@@ -127,62 +126,62 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
     print ('')
     print ('All decision variables:\n')
 
-    print("Produced materials")
-
-    s = '%8s' % ''
-    for k in K:
-        s = s + '%8s' % months[k]
-    print(s)    
-
-    for j in J:
-        s = '%8s' % DemandName[j]
-        for k in K:
-            s = s + '%8.3f' % y[j,k].x
-        s = s + '%8.3f' % sum(y[j,k].x for k in K)    
-        print (s)    
-
-    s = '%8s' % ''
-    for k in K:
-        s = s + '%8.3f' % sum(y[j,k].x for j in J)    
-    print (s)  
-
-    print("Bought materials")
-
-    s = '%8s' % ''
-    for k in K:
-        s = s + '%8s' % months[k]
-    print(s)    
-
-    for i in I:
-        s = '%8s' % Steeltype[i]
-        for k in K:
-            s = s + '%8.3f' % x[i,k].x
-        s = s + '%8.3f' % sum(x[i,k].x for k in K)    
-        print(s)    
-
-    s = '%8s' % ''
-    for k in K:
-        s = s + '%8.3f' % sum(x[i,k].x for i in I)    
-    print(s)    
-
-    print("Storage ")
-
-    s = '%8s' % ''
-    for k in K:
-        s = s + '%8s' % months[k]
-    print (s) 
-
-    for j in J:
-        s = '%8s' % DemandName[j]
-        for k in K:
-            s = s + '%8.3f' % z[j,k].x
-        s = s + '%8.3f' % sum(z[j,k].x for k in K)    
-        print (s)    
-
-    s = '%8s' % ''
-    for k in K:
-        s = s + '%8.3f' % sum(z[j,k].x for j in J)    
-    print(s)    
+#    print("Produced materials")
+#
+#    s = '%8s' % ''
+#    for k in K:
+#        s = s + '%8s' % months[k]
+#    print(s)    
+#
+#    for j in J:
+#        s = '%8s' % DemandName[j]
+#        for k in K:
+#            s = s + '%8.3f' % y[j,k].x
+#        s = s + '%8.3f' % sum (y[j,k].x for j in J)    
+#        print (s)    #
+#
+#    s = '%8s' % ''
+#    for k in K:
+#        s = s + '%8.3f' % sum (y[j,k].x for j in J)    
+#    print (s)  
+#
+#    print("Bought materials")#
+#
+#    s = '%8s' % ''
+#    for k in K:
+#        s = s + '%8s' % months[k]
+#    print(s)    
+#
+#    for i in I:
+#        s = '%8s' % Steeltype[i]
+#        for k in K:
+#            s = s + '%8.3f' % x[i,k].x
+#        s = s + '%8.3f' % sum (x[i,k].x for i in I)    
+#       print (s)    
+#
+#    s = '%8s' % ''
+#    for k in K:
+#        s = s + '%8.3f' % sum (x[i,k].x for i in I)    
+#    print (s)    
+#
+#    print("Storage ")
+#
+#    s = '%8s' % ''
+ #   for k in K:
+ #       s = s + '%8s' % months[k]
+ #   print (s) 
+#
+#    for j in J:
+#        s = '%8s' % DemandName[j]
+#        for k in K:
+#            s = s + '%8.3f' % z[j,k].x
+#        s = s + '%8.3f' % sum (z[j,k].x for k in K)    
+#        print (s)    #
+#
+#    s = '%8s' % ''
+#    for k in K:
+#        s = s + '%8.3f' % sum (z[j,k].x for j in J)    
+#    print (s)    
 
 else:
     print ('\nNo feasible solution found')
