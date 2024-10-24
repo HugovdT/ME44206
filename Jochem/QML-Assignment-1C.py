@@ -7,6 +7,7 @@
 
 from gurobipy import *
 import pandas as pd
+import math
 
 model = Model ('AlloyCombination')
 
@@ -100,12 +101,12 @@ for k in K:
 # Constraint 5: perfect use of all Ni%
 con5 = {}
 for k in K:
-    con5[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con5[' + str(k) + ']-')
+    con5[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) <= quicksum(PerNiNec[j] * y[j,k] for j in J), 'con5[' + str(k) + ']-')
 
 # Constraint 6: perfect use of all Cr%
 con6 = {}
 for k in K:
-    con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
+    con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) <= quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
 model.update()
 
@@ -123,9 +124,9 @@ print ('\n--------------------------------------------------------------------\n
 months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] 
 
 if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
-    print ('Total costs : %10.2f euro' % model.objVal)
-    print ('')
-    print ('All decision variables:\n')
+    print('Total costs : %10.2f euro' % model.objVal)
+    print('')
+    print('All decision variables:\n')
 
     print("Produced materials")
 
@@ -138,13 +139,13 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
         s = '%8s' % DemandName[j]
         for k in K:
             s = s + '%8.3f' % y[j,k].x
-        s = s + '%8.3f' % sum(y[j,k].x for k in K)    
-        print (s)    
+        s = s + '%8.3f' % sum(y[j,k].x for j in J)    
+        print(s)    
 
     s = '%8s' % ''
     for k in K:
         s = s + '%8.3f' % sum(y[j,k].x for j in J)    
-    print (s)  
+    print(s)  
 
     print("Bought materials")
 
@@ -157,7 +158,7 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
         s = '%8s' % Steeltype[i]
         for k in K:
             s = s + '%8.3f' % x[i,k].x
-        s = s + '%8.3f' % sum(x[i,k].x for k in K)    
+        s = s + '%8.3f' % sum(x[i,k].x for i in I)    
         print(s)    
 
     s = '%8s' % ''
@@ -177,7 +178,7 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
         for k in K:
             s = s + '%8.3f' % z[j,k].x
         s = s + '%8.3f' % sum(z[j,k].x for k in K)    
-        print (s)    
+        print(s)    
 
     s = '%8s' % ''
     for k in K:
@@ -185,9 +186,9 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
     print(s)    
 
 else:
-    print ('\nNo feasible solution found')
+    print ('\n No feasible solution found')
 
-print ('\nREADY\n')
+print ('\n READY \n')
 
 
 

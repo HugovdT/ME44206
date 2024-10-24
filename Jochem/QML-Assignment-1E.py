@@ -7,6 +7,7 @@
 
 from gurobipy import *
 import pandas as pd
+import numpy as np
 
 model = Model ('AlloyCombination')
 
@@ -27,10 +28,10 @@ HoldingCosts = (20, 10, 5) #euro's #h_j
 PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
 maxProd = 100 #kg per month #p_max
-
-#Demand1810 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month # Using this would need to give 185.58 ekkies
-#Demand1808 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
-#Demand1800 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
+################# New for E
+CuLim = 0.10 # percentage of copper
+EC = 100 # euros costs for use of electrolysis
+ECkg = 5 # euros per kilo copper
 
 Demand = (Demand1810, Demand1808, Demand1800)
 Demand = pd.DataFrame(Demand) # make array for d_ik
@@ -53,7 +54,7 @@ for i in I:
 y = {}
 for j in J:
     for k in K:
-        y[j,k] = model.addVar(lb = 0, vtype = GRB.CONTINUOUS, obj = 0, name = 'Y[' + str(j) + ',' + str(k) +']') # klopt het dat het 0 is als obj?
+        y[j,k] = model.addVar(lb = 0, vtype = GRB.CONTINUOUS, obj = 0, name = 'Y[' + str(j) + ',' + str(k) +']')
 
 # Decision variable z(j,k) (storage of type of steel j in month k)
 z = {}
@@ -61,12 +62,29 @@ for j in J:
     for k in K:
         z[j,k] = model.addVar(lb = 0, vtype = GRB.CONTINUOUS, obj = HoldingCosts[j], name = 'Z[' + str(j) + ',' + str(k) +']')
 
-model.update()
+ECk = {} # define dictionary with electrolysis per month  costs
+for k in K:
+    ECk[k] = LinExpr()
+    for i in I:
+        ECk[k] = EC + ECkg * x[i,k] * SupCuPer[i] # add costs per kilo for every month
 
+# Binary Decision variable e(k) to use electrolysis in a month
+e = {}
+for k in K:
+    e[k] = model.addVar(lb = 0, vtype = GRB.BINARY, obj = 0, name = 'E[' + str(k) +']') 
+
+model.update()
 
 # ---- Objective Function ----
 
-model.modelSense = GRB.MINIMIZE
+CostHolding = quicksum(HoldingCosts[j] * z[j,k] for j in J for k in K)
+CostBuying = quicksum(CostSup[i] * x[i,k] for i in I for k in K)
+CostElec = quicksum(ECk[k] * e[k] for k in K)
+
+costs = CostHolding + CostBuying + CostElec # define the total costs in an alternative
+
+#model.modelSense = GRB.MINIMIZE
+model.setObjective(costs, GRB.MINIMIZE) # Note: this way of handeling it has been changed!
 model.update()
 
 
@@ -107,11 +125,23 @@ con6 = {}
 for k in K:
     con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
+# Constraint 7: do not go over copper limit
+con7 = {}
+TotalCuPer = {}
+for k in K:
+    TotalCuPer[k] = quicksum(x[i,k] * SupCuPer[i] for i in I)
+    con7[k] = model.addConstr(TotalCuPer[k] <= (CuLim * quicksum(y[j,k] for j in J)), 'con7[' + str(k) + ']-') # totale koperpercentage vs toelaatbaar
+
+# Constraint 8: removed copper == removed weight
+con8 = {}
+for k in K:
+    con8[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] + SupCuPer[i] * x[i,k] for i in I for j in J), 'con8[' + str(k) + ']-')
+
 model.update()
 
 # ---- Solve ----
 
-model.setParam( 'OutputFlag', True) # silencing gurobi output or not
+model.setParam('OutputFlag', True) # silencing gurobi output or not
 model.setParam ('MIPGap', 0);       # find the optimal solution
 model.write("output.lp")            # print the model in .lp format file
 
@@ -182,7 +212,25 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
     s = '%8s' % ''
     for k in K:
         s = s + '%8.3f' % sum(z[j,k].x for j in J)    
-    print(s)    
+    print(s)   
+
+    print("Electrolysis")
+
+    s = '%8s' % ''
+    for k in K:
+        s = s + '%8s' % months[k]
+    print(s) 
+
+    tekst = ["Binary", "Costs"]
+    for p in range(2):
+        s = '%8s' % tekst[p]
+        for k in K:
+            if p == 0:
+                s = s + '%8.3f' % e[k].x
+            else:
+                ECk_value = EC + sum(ECkg * x[i,k].x * SupCuPer[i] for i in I)
+                s = s + '%8.3f' % ECk_value  # Print the evaluated cost
+        print(s) 
 
 else:
     print ('\nNo feasible solution found')
