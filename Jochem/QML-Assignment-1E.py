@@ -29,9 +29,11 @@ PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
 maxProd = 100 #kg per month #p_max
 ################# New for E
-CuLim = 0.10 # percentage of copper
+CuLim = 0.01 # percentage of copper # Cu_max
 EC = 100 # euros costs for use of electrolysis
 ECkg = 5 # euros per kilo copper
+
+M = 1e6 * 1e6 # Big M-constant
 
 Demand = (Demand1810, Demand1808, Demand1800)
 Demand = pd.DataFrame(Demand) # make array for d_ik
@@ -125,17 +127,15 @@ con6 = {}
 for k in K:
     con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
-# Constraint 7: do not go over copper limit
+# Constraint 7: do not go over copper limit or use electrolysis to remove percentage of copper
 con7 = {}
 TotalCuPer = {}
 for k in K:
     TotalCuPer[k] = quicksum(x[i,k] * SupCuPer[i] for i in I)
-    con7[k] = model.addConstr(TotalCuPer[k] <= (CuLim * quicksum(y[j,k] for j in J)), 'con7[' + str(k) + ']-') # totale koperpercentage vs toelaatbaar
-
-# Constraint 8: removed copper == removed weight
-con8 = {}
-for k in K:
-    con8[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] + SupCuPer[i] * x[i,k] for i in I for j in J), 'con8[' + str(k) + ']-')
+    # do not go over copper limit
+    con7[k] = model.addConstr(TotalCuPer[k] <= (CuLim * quicksum(y[j,k] for j in J)) + M * e[k], 'con7_no_elec[' + str(k) + ']-') # 1 multiplied with M which makes system suck
+    # or removed copper weight is removed
+    con7[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + quicksum(TotalCuPer[k] * x[i,k] for i in I) <= M * (1 - e[k]), 'con7_elec[' + str(k) + ']-')
 
 model.update()
 
@@ -226,7 +226,7 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
         s = '%8s' % tekst[p]
         for k in K:
             if p == 0:
-                s = s + '%8.3f' % e[k].x
+                s = s + '%8.0f' % e[k].x
             else:
                 ECk_value = EC + sum(ECkg * x[i,k].x * SupCuPer[i] for i in I)
                 s = s + '%8.3f' % ECk_value  # Print the evaluated cost
