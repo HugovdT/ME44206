@@ -11,7 +11,6 @@ import numpy as np
 
 model = Model ('AlloyCombination')
 
-
 # ---- Data ----
 
 Steeltype     = ('A', 'B', 'C', 'D', 'E')           # Names of suppliers
@@ -29,7 +28,7 @@ PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
 maxProd = 100 #kg per month #p_max
 ################# New for E
-CuLim = 0.029 # percentage of copper # Cu_max
+CuLim = 0.01 # percentage of copper # Cu_max
 EC = 100 # euros costs for use of electrolysis
 ECkg = 5 # euros per kilo copper
 
@@ -89,7 +88,6 @@ costs = CostHolding + CostBuying + CostElec # define the total costs in an alter
 model.setObjective(costs, GRB.MINIMIZE) # Note: this way of handeling it has been changed!
 model.update()
 
-
 # ---- Constraints ----
 
 # Constraints 1: supplier capacity per I
@@ -114,8 +112,10 @@ for j in J:
 
 # Constraint 4: do not buy more than you produce # Corrected for use of electrolysis
 con4 = {}
+TotalCuPer = {}
 for k in K:
-    con4[k] = model.addConstr(quicksum(x[i,k] for i in I) * (1 - e[k]) == quicksum(y[j,k] for j in J) * (1 - e[k]), 'con4[' + str(k) + ']-')
+    TotalCuPer[k] = quicksum(x[i,k] * SupCuPer[i] for i in I)
+    con4[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] for j in J) - TotalCuPer[k] * e[k], 'con4[' + str(k) + ']-')
 
 # Constraint 5: perfect use of all Ni%
 con5 = {}
@@ -129,16 +129,16 @@ for k in K:
 
 # Constraint 7 & 8: do not go over copper limit or use electrolysis to remove percentage of copper
 con7 = {}
-con8 = {}
-con9 = {}
+#con8 = {}
+#con9 = {}
 TotalCuPer = {}
 for k in K:
     TotalCuPer[k] = quicksum(x[i,k] * SupCuPer[i] for i in I)
     # do not go over copper limit
     con7[k] = model.addConstr(TotalCuPer[k] <= (CuLim * quicksum(y[j,k] for j in J)) + M * e[k], 'con7_no_elec[' + str(k) + ']-') # 1 multiplied with M which makes system suck
     # or removed copper weight is removed
-    con8[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + TotalCuPer[k] <= M * (1 - e[k]), 'con8_elec[' + str(k) + ']-') # This one could have been added to the general weight constraint which would have been more optimal
-    con9[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + TotalCuPer[k] >= 0, 'con9[' + str(k) + ']-') # make sure statement above does not become negative
+#    con8[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + TotalCuPer[k] <= M * (1 - e[k]), 'con8_elec[' + str(k) + ']-') # This one could have been added to the general weight constraint which would have been more optimal
+#    con9[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + TotalCuPer[k] >= 0, 'con9[' + str(k) + ']-') # make sure statement above does not become negative
 
 model.update()
 
@@ -149,7 +149,6 @@ model.setParam ('MIPGap', 0);       # find the optimal solution
 model.write("output.lp")            # print the model in .lp format file
 
 model.optimize()
-
 
 # --- Print results ---
 print ('\n--------------------------------------------------------------------\n')
@@ -239,6 +238,3 @@ else:
     print ('\nNo feasible solution found')
 
 print ('\nREADY\n')
-
-
-
