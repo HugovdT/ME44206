@@ -9,7 +9,7 @@ from gurobipy import *
 import pandas as pd
 import numpy as np
 
-model = Model ('AlloyCombination')
+model = Model('AlloyCombination')
 
 # ---- Data ----
 
@@ -28,7 +28,7 @@ PerNiNec = (0.10, 0.08, 0) # percentage of #pNi_j
 PerCrNec = 0.18 # percentage of chromiumn needed in all versions #pCr
 maxProd = 100 #kg per month #p_max
 ################# New for E
-CuLim = 0.01 # percentage of copper # Cu_max
+CuLim = 0.02 # percentage of copper # Cu_max
 EC = 100 # euros costs for use of electrolysis
 ECkg = 5 # euros per kilo copper
 
@@ -66,8 +66,7 @@ for j in J:
 ECk = {} # define dictionary with electrolysis per month  costs
 for k in K:
     ECk[k] = LinExpr()
-    for i in I:
-        ECk[k] = EC + ECkg * x[i,k] * SupCuPer[i] # add costs per kilo for every month
+    ECk[k] = EC + ECkg * quicksum(x[i,k] * SupCuPer[i] for i in I) # add costs per kilo for every month
 
 # Binary Decision variable e(k) to use electrolysis in a month
 e = {}
@@ -136,7 +135,7 @@ for k in K:
     TotalCuPer[k] = quicksum(x[i,k] * SupCuPer[i] for i in I)
     # do not go over copper limit
     con7[k] = model.addConstr(TotalCuPer[k] <= (CuLim * quicksum(y[j,k] for j in J)) + M * e[k], 'con7_no_elec[' + str(k) + ']-') # 1 multiplied with M which makes system suck
-    # or removed copper weight is removed
+    # or removed copper weight is removed -> moved to constraint 4
 #    con8[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + TotalCuPer[k] <= M * (1 - e[k]), 'con8_elec[' + str(k) + ']-') # This one could have been added to the general weight constraint which would have been more optimal
 #    con9[k] = model.addConstr(quicksum(x[i,k] for i in I) - quicksum(y[j,k] for j in J) + TotalCuPer[k] >= 0, 'con9[' + str(k) + ']-') # make sure statement above does not become negative
 
