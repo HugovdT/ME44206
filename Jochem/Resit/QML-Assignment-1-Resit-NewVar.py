@@ -99,20 +99,20 @@ for j in J:
         else:
             con3[j,k] = model.addConstr((y[j,k] + z[j,k-1] - z[j,k]) == (Demand.iloc[j,k]), 'con3[' + str(j) + ',' + str(k) + ']-')
 
-# Constraint 4: do not buy more than you produce
-con4 = {}
-for k in K:
-    con4[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] for j in J), 'con4[' + str(k) + ']-')
+# Constraint 4: do not buy more than you produce # Redundant
+#con4 = {}
+#for k in K:
+#    con4[k] = model.addConstr(quicksum(x[i,k] for i in I) == quicksum(y[j,k] for j in J), 'con4[' + str(k) + ']-')
 
-# Constraint 5: perfect use of all Ni%
-con5 = {}
-for k in K:
-    con5[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con5[' + str(k) + ']-')
+# Constraint 5: perfect use of all Ni% # Redundant
+#con5 = {}
+#for k in K:
+#    con5[k] = model.addConstr(quicksum(SupNiPer[i] * x[i,k] for i in I) == quicksum(PerNiNec[j] * y[j,k] for j in J), 'con5[' + str(k) + ']-')
 
-# Constraint 6: perfect use of all Cr%
-con6 = {}
-for k in K:
-    con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
+# Constraint 6: perfect use of all Cr% # Redundant
+#con6 = {}
+#for k in K:
+#    con6[k] = model.addConstr(quicksum(SupCrPer[i] * x[i,k] for i in I) == quicksum(PerCrNec * y[j,k] for j in J), 'con6[' + str(k) + ']-')
 
 # Constraint A: new products most be made from decision variable V
 conA = {}
@@ -130,13 +130,13 @@ for i in I:
 conC = {}
 for j in J:
     for k in K:
-        conC[i,k] = model.addConstr(quicksum(SupCrPer[i] * v[i,j,k] for i in I) == PerCrNec * y[j,k], 'conC[' + str(j) + ',' + str(k) + ']-')     
+        conC[j,k] = model.addConstr(quicksum(SupCrPer[i] * v[i,j,k] for i in I) == PerCrNec * y[j,k], 'conC[' + str(j) + ',' + str(k) + ']-')     
 
 # Constraint D: determine Ni percentage
 conD = {}
 for j in J:
     for k in K:
-        conD[i,k] = model.addConstr(quicksum(SupNiPer[i] * v[i,j,k] for i in I) == PerNiNec[j] * y[j,k], 'conD[' + str(j) + ',' + str(k) + ']-')     
+        conD[j,k] = model.addConstr(quicksum(SupNiPer[i] * v[i,j,k] for i in I) == PerNiNec[j] * y[j,k], 'conD[' + str(j) + ',' + str(k) + ']-')     
 
 model.update()
 
