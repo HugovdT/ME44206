@@ -32,6 +32,8 @@ maxProd = 100 #kg per month #p_max
 #Demand1808 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
 #Demand1800 = [10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] #kg per month
 
+#SupNiPer = (0.01,  0.15,  0.10,  0.16, 0.10) # To test if it is feasible when all options contain Nickel (while result should not have for 1800)
+
 Demand = (Demand1810, Demand1808, Demand1800)
 Demand = pd.DataFrame(Demand) # make array for d_ik
 
@@ -222,7 +224,27 @@ if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
     s = '%8s' % ''
     for k in K:
         s = s + '%8.3f' % sum(z[j,k].x for j in J)    
+    print(s)   
+
+    print("Supplier material per product")
+
+    s = '%8s' % ''
+    for k in K:
+        s = s + '%8s' % months[k]
     print(s)    
+
+    for j in J:
+        for i in I:
+            s = '%8s' % DemandName[j] + Steeltype[i]
+            for k in K:
+                s = s + '%8.2f' % v[i,j,k].x
+            s = s + '%8.2f' % sum(v[i,j,k].x for k in K)    
+            print(s)    
+
+        s = '%8s' % ''
+        for k in K:
+            s = s + '%8.2f' % sum(v[i,j,k].x for i in I)    
+        print(s)   
 
 else:
     print ('\nNo feasible solution found')
