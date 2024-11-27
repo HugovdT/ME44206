@@ -1,9 +1,9 @@
-# Quantitative Methods for Logistics Assignment 1
+# Quantitative Methods for Logistics Assignment 1 - Resit
 # Gurobi Optimization
 #
 # Author: Jochem den Nijs
-# Version 0.1
-# 2024-10-04
+# Version 1.1
+# 2024-11-27
 
 from gurobipy import *
 import pandas as pd
