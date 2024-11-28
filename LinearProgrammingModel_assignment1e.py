@@ -21,6 +21,7 @@ for test in range(0, reps):
     nidist = (0.10, 0.08, 0)
     chdist = (0.18, 0.18, 0.18)
     holdingcosts = (20, 10, 5)
+    maxmonth = 100
     electrolysisFixedCost = 100 # fixed cost of electrolysis per month (if applied)
     electrolysisVariableCost = 5 # variable cost of electrolysis per kg of copper in produced steel (if applied)
 
@@ -106,7 +107,7 @@ for test in range(0, reps):
     # Constraint 3: max monthly production
     con3 = {}
     for t in T:
-        con3[t] = model.addConstr(quicksum(p[j,t] for j in J) <= 100, 'con3[' + str(t) + ']-')
+        con3[t] = model.addConstr(quicksum(p[j,t] for j in J) <= maxmonth, 'con3[' + str(t) + ']-')
 
     # Constraint 4: nickel distribution
     con4 = {}

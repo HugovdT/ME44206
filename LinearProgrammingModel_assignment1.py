@@ -16,6 +16,7 @@ cost = (5, 10, 9, 7, 8.5) #cost per kg of ore
 nidist = (0.10, 0.08, 0)
 chdist = (0.18, 0.18, 0.18)
 holdingcosts = (20, 10, 5)
+maxmonth = 100
 
 # Monthly demand where 18/10, 18/8 and 18/0 are the distributions of chromium and nickel in the stainless steel by percentage
 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -99,7 +100,7 @@ for j in J:
 # Constraint 3: max monthly production
 con3 = {}
 for t in T:
-    con3[t] = model.addConstr(quicksum(p[j,t] for j in J) <= 100, 'con3[' + str(t) + ']-')
+    con3[t] = model.addConstr(quicksum(p[j,t] for j in J) <= maxmonth, 'con3[' + str(t) + ']-')
 
 # Constraint 4: nickel distribution
 con4 = {}
