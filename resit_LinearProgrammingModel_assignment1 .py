@@ -1,6 +1,6 @@
 from gurobipy import *
 import pandas as pd
-
+pd.set_option('display.float_format', '{:.2f}'.format)
 model = Model ('StainlessSteelProduction')
 
 # ---- Parameters ----
@@ -132,16 +132,29 @@ model.optimize ()
 
 # --- Print results ---
 print ('\n--------------------------------------------------------------------\n')
-    
 if model.status == GRB.Status.OPTIMAL: # If optimal solution is found
     print ('All decision variables:\n')
     for v in model.getVars():
         if v.x > 0:
             print('%s: %g' % (v.varName, v.x))
-    x_matrix = pd.DataFrame([[x[i,j,t].x for t in T] for i in I], index=suppliername, columns=months)
-    s_matrix = pd.DataFrame([[s[j, t].x for t in T] for j in J], index=[f'Steel_{j}' for j in J], columns=months)
-    p_matrix = pd.DataFrame([[p[j, t].x for t in T] for j in J], index=[f'Steel_{j}' for j in J], columns=months)
+    for i in I:
+        for t in T:
+            x[i,t] = quicksum(x[i,j,t].x for j in J)
 
+    
+    x_matrix = pd.DataFrame(
+    [[round(sum(x[i, j, t].x for j in J), 2)  for t in T]for i in I],
+    index=suppliername,
+    columns=months,
+    )
+    s_matrix = pd.DataFrame([[s[j, t].x for t in T] for j in J], index=[f'Steel_{j}' for j in J], 
+    columns=months
+    )
+    p_matrix = pd.DataFrame([[p[j, t].x for t in T] for j in J], index=[f'Steel_{j}' for j in J], 
+    columns=months
+    )
+
+    pd.set_option('display.precision', 2)
     print("\nX matrix (Alloy supply):")
     print(x_matrix)
     print("\nS matrix (Storage):")
